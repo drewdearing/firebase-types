@@ -1,0 +1,41 @@
+{
+  "name": "firebase-types",
+  "version": "1.0.0",
+  "description": "Document Schema Validator for Firestore",
+  "main": "build/index.js",
+  "scripts": {
+    "flow": "flow",
+    "build": "babel src -d build",
+    "test": "npm run build && node build/__tests__/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/drewdearing/firebase-types.git"
+  },
+  "keywords": [
+    "firebase",
+    "schema",
+    "validator",
+    "document",
+    "doc",
+    "field",
+    "types"
+  ],
+  "author": "drewdearing",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/drewdearing/firebase-types/issues"
+  },
+  "homepage": "https://github.com/drewdearing/firebase-types#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.16.0",
+    "@babel/core": "^7.16.0",
+    "@babel/preset-flow": "^7.16.0",
+    "flow-bin": "^0.163.0"
+  },
+  "dependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.16.0",
+    "babel-plugin-transform-flow-enums": "0.0.2",
+    "lodash": "^4.17.21"
+  }
+}
