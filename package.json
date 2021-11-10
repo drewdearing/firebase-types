@@ -1,5 +1,5 @@
 {
-  "name": "firebase-types",
+  "name": "firestore-type-validator",
   "version": "1.0.0",
   "description": "Document Schema Validator for Firestore",
   "main": "build/index.js",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/drewdearing/firebase-types.git"
+    "url": "git+https://github.com/drewdearing/firestore-type-validator.git"
   },
   "keywords": [
     "firebase",
@@ -24,9 +24,9 @@
   "author": "drewdearing",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/drewdearing/firebase-types/issues"
+    "url": "https://github.com/drewdearing/firestore-type-validator/issues"
   },
-  "homepage": "https://github.com/drewdearing/firebase-types#readme",
+  "homepage": "https://github.com/drewdearing/firestore-type-validator#readme",
   "devDependencies": {
     "@babel/cli": "^7.16.0",
     "@babel/core": "^7.16.0",
