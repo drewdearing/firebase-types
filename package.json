@@ -28,14 +28,17 @@
   },
   "homepage": "https://github.com/drewdearing/firestore-type-validator#readme",
   "devDependencies": {
-    "@babel/cli": "^7.16.0",
-    "@babel/core": "^7.16.0",
-    "@babel/preset-flow": "^7.16.0",
+    "@babel/cli": "^7.17.10",
+    "@babel/core": "^7.17.10",
+    "@babel/preset-flow": "^7.16.7",
     "flow-bin": "^0.163.0"
   },
   "dependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.16.0",
+    "@firebase/app": "^0.7.23",
+    "@firebase/firestore": "^3.4.9",
     "babel-plugin-transform-flow-enums": "0.0.2",
+    "dotenv": "^16.0.1",
     "lodash": "^4.17.21"
   }
 }

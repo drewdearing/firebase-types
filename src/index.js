@@ -1,5 +1,17 @@
 // @flow
 const _ = require("lodash");
+import {
+  addDoc,
+  setDoc,
+  deleteDoc,
+  getDoc,
+  doc,
+  collection,
+  getFirestore,
+  updateDoc,
+  onSnapshot,
+  runTransaction,
+} from "@firebase/firestore";
 
 type FirebaseMapData = { [key: string]: FirebaseType };
 
@@ -41,7 +53,9 @@ class FirebaseType implements IFirebaseType {
     this._options = options;
     if (!this._validateDefault()) {
       throw new Error(
-        `default value ${options.default} is not compatible with ${this.constructor.name}`
+        `default value ${
+          options.default ?? "undefined"
+        } is not compatible with ${this.constructor.name}`
       );
     }
   }
@@ -142,7 +156,7 @@ class FirebaseMap extends FirebaseType {
     this.data = data;
   }
   static _new(options: FirebaseTypeOptions): this {
-    return new this(options.data ?? {}, options);
+    return new this(_.cloneDeep(options.data ?? {}), options);
   }
   static _isType(value: any): boolean {
     return typeof value === "object" && !Array.isArray(value) && value !== null;
@@ -158,7 +172,9 @@ class FirebaseMap extends FirebaseType {
     for (let key in data) {
       const type = current_data[key];
       const new_type = data[key];
-      if (type.constructor !== new_type.constructor) {
+      const constructor = type.constructor;
+      const new_constructor = new_type.constructor;
+      if (constructor !== new_constructor) {
         throw new Error(
           `Attempting to override ${type.constructor.name} with ${new_type.constructor.name}`
         );
@@ -207,7 +223,7 @@ class FirebaseArray extends FirebaseType {
     this.data = data;
   }
   static _new(options: FirebaseTypeOptions): this {
-    return new this(options.data ?? [], options);
+    return new this(_.cloneDeep(options.data ?? []), options);
   }
   static _isType(value: any): boolean {
     return Array.isArray(value);
@@ -238,6 +254,144 @@ class FirebaseArray extends FirebaseType {
   }
 }
 
+class FirebaseSchema {
+  _data: FirebaseMap;
+  constructor(data: FirebaseMapData) {
+    this._data = new FirebaseMap(data);
+  }
+  asFirebaseMap(options: FirebaseMapOptions = {}): FirebaseMap {
+    return this._data.overrideOptions(options);
+  }
+  validate(data: {}, update: boolean = false): boolean {
+    return this._data.validate(data, update);
+  }
+}
+
+class FirebaseModel {
+  _data: {};
+  id: string;
+  _doc: any;
+  get data(): {} {
+    return _.cloneDeep(this._data);
+  }
+  constructor(docSnap: any) {
+    if (
+      !docSnap.exists() ||
+      !this.constructor.validate(docSnap.data()) ||
+      docSnap.ref.path !== this.constructor.docSnapPath(docSnap)
+    ) {
+      throw new Error(
+        `provided document is not valid for ${this.constructor.name}`
+      );
+    }
+    this._data = docSnap.data();
+    this.id = docSnap.id;
+    this._doc = docSnap.ref;
+  }
+  static docSnapPath(docSnap: any): string {
+    return `${this.collectionPath(docSnap.data())}/${docSnap.id}`;
+  }
+  static collectionPath(data: ?{} = null): string {
+    throw new Error(`implement static collectionPath() in ${this.name}`);
+  }
+  static modelSchema(): FirebaseSchema {
+    throw new Error(`implement static modelSchema() in ${this.name}`);
+  }
+  static validate(data: {}, update: boolean = false): boolean {
+    return this.modelSchema().validate(data, update);
+  }
+  static async create(data: {}, id: ?string): Promise<this> {
+    if (!this.validate(data)) {
+      throw new Error(
+        `Invalid Fields were found in creation data for ${this.name}`
+      );
+    }
+    let colRef = collection(getFirestore(), this.collectionPath(data));
+    let docRef = null;
+    if (!id) {
+      docRef = await addDoc(colRef, data);
+    } else {
+      docRef = doc(colRef, id);
+      let exists = false;
+      try {
+        await this.getByID(id);
+        exists = true;
+      } catch (e) {}
+      if (exists) {
+        throw new Error(`ID ${id} already exists for type ${this.name}`);
+      }
+      await setDoc(docRef, data);
+    }
+    let docSnap = await getDoc(docRef);
+    return new this(docSnap);
+  }
+  static async getByID(id: string, data: ?{} = null): Promise<this> {
+    let colRef = collection(getFirestore(), this.collectionPath(data));
+    let docSnap = await getDoc(doc(colRef, id));
+    return new this(docSnap);
+  }
+  listen(func: (data: this) => any): any {
+    return new Proxy(
+      onSnapshot(this._doc, (docSnap) => {
+        func(new this.constructor(docSnap));
+      }),
+      {
+        get(object, property) {
+          switch (property) {
+            case "stop":
+              return object;
+            default:
+              throw new Error(`property ${property} does not exist`);
+          }
+        },
+      }
+    );
+  }
+  async _refreshData(): Promise<this> {
+    let docSnap = await getDoc(this._doc);
+    return new this.constructor(docSnap);
+  }
+  async set(data: ?{} = null): Promise<this> {
+    data = !data ? this._data : data;
+    if (!this.constructor.validate(data)) {
+      throw new Error(
+        `Invalid Fields were found in upsert data for ${this.constructor.name}`
+      );
+    }
+    await setDoc(this._doc, data);
+    return await this._refreshData();
+  }
+  async update(data: {}): Promise<this> {
+    if (!this.constructor.validate(data, true)) {
+      throw new Error(
+        `Invalid Fields were found in update data for ${this.constructor.name}`
+      );
+    }
+    await updateDoc(this._doc, data);
+    return await this._refreshData();
+  }
+  async delete(): Promise<void> {
+    await deleteDoc(this._doc);
+  }
+  async updateAtomic(updateFunc: (data: {}) => Promise<{}>): Promise<this> {
+    await runTransaction(getFirestore(), async (transaction) => {
+      const docSnap = await transaction.get(this._doc);
+      if (!docSnap.exists()) {
+        throw new Error(`Document ${this._doc.path} does not exist!`);
+      }
+      const updateData = await updateFunc(docSnap.data());
+      if (this.constructor.validate(updateData, true)) {
+        transaction.update(this._doc, updateData);
+      } else {
+        throw new Error(
+          `Invalid Fields were found in update data for ${this.constructor.name}`
+        );
+      }
+    });
+    return await this._refreshData();
+  }
+}
+
 module.exports = {
   FirebaseType,
   FirebaseString,
@@ -246,4 +400,6 @@ module.exports = {
   FirebaseNull,
   FirebaseMap,
   FirebaseArray,
+  FirebaseSchema,
+  FirebaseModel,
 };
