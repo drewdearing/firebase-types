@@ -164,6 +164,18 @@ class FirebaseMap extends FirebaseType {
   default(): {} {
     return {};
   }
+  extend(data: FirebaseMapData): this {
+    const current_data = _.cloneDeep(this.data);
+    let options = this.options();
+    for (let key in data) {
+      if (key in current_data) {
+        throw new Error(`Attempting to override field ${key} during extend`);
+      }
+      current_data[key] = data[key];
+    }
+    options.data = current_data;
+    return this.constructor._new(options);
+  }
   override(
     data: FirebaseMapData,
     options: $Shape<FirebaseMapOptions> = {}
@@ -172,11 +184,13 @@ class FirebaseMap extends FirebaseType {
     for (let key in data) {
       const type = current_data[key];
       const new_type = data[key];
-      const constructor = type.constructor;
+      const constructor = type ? type.constructor : undefined;
       const new_constructor = new_type.constructor;
       if (constructor !== new_constructor) {
         throw new Error(
-          `Attempting to override ${type.constructor.name} with ${new_type.constructor.name}`
+          `Attempting to override ${
+            type ? type.constructor.name : `unknown field ${key}`
+          } with ${new_type.constructor.name}`
         );
       }
       current_data[key] = type.overrideOptions(new_type._options);
@@ -264,6 +278,10 @@ class FirebaseSchema {
   }
   validate(data: {}, update: boolean = false): boolean {
     return this._data.validate(data, update);
+  }
+  extend(data: FirebaseMapData): this {
+    let map = this._data.extend(data);
+    return new this.constructor(map.data);
   }
 }
 
