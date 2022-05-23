@@ -20,6 +20,7 @@ type FirebaseArrayData = Array<FirebaseType>;
 type FirebaseTypeOptions = {
   required: boolean,
   updatable: boolean,
+  nullable: boolean,
   default?: any,
   data?: any,
   enum?: {},
@@ -50,6 +51,7 @@ class FirebaseType implements IFirebaseType {
     options = _.cloneDeep(options ?? {});
     options.required = options.required ?? true;
     options.updatable = options.updatable ?? true;
+    options.nullable = options.nullable ?? false;
     this._options = options;
     if (!this._validateDefault()) {
       throw new Error(
@@ -106,10 +108,17 @@ class FirebaseType implements IFirebaseType {
     return in_enum && in_values;
   }
   _validateValue(value: any, update: boolean = false): boolean {
-    return this.constructor._isType(value) || this._validateUndefinded(value);
+    return (
+      this.constructor._isType(value) ||
+      this._validateUndefinded(value) ||
+      this._validateNullable(value)
+    );
   }
   _validateUndefinded(value: any): boolean {
     return !this._options.required ? value === undefined : false;
+  }
+  _validateNullable(value: any): boolean {
+    return this._options.nullable ? value === null : false;
   }
   _validateUpdatable(update: boolean): boolean {
     return update ? this._options.updatable : true;
@@ -327,7 +336,7 @@ class FirebaseModel {
     let colRef = collection(getFirestore(), this.collectionPath(data));
     let docRef = null;
     if (!id) {
-      docRef = await addDoc(colRef, data);
+      docRef = await addDoc(colRef, this.getFirestoreSafeData(data));
     } else {
       docRef = doc(colRef, id);
       let exists = false;
@@ -338,7 +347,7 @@ class FirebaseModel {
       if (exists) {
         throw new Error(`ID ${id} already exists for type ${this.name}`);
       }
-      await setDoc(docRef, data);
+      await setDoc(docRef, this.getFirestoreSafeData(data));
     }
     let docSnap = await getDoc(docRef);
     return new this(docSnap);
@@ -347,6 +356,11 @@ class FirebaseModel {
     let colRef = collection(getFirestore(), this.collectionPath(data));
     let docSnap = await getDoc(doc(colRef, id));
     return new this(docSnap);
+  }
+  static getFirestoreSafeData(data: {}): {} {
+    return Object.fromEntries(
+      Object.entries(data).filter((entry) => entry[1] !== undefined)
+    );
   }
   listen(func: (data: this) => any): any {
     return new Proxy(
@@ -376,7 +390,7 @@ class FirebaseModel {
         `Invalid Fields were found in upsert data for ${this.constructor.name}`
       );
     }
-    await setDoc(this._doc, data);
+    await setDoc(this._doc, this.constructor.getFirestoreSafeData(data));
     return await this._refreshData();
   }
   async update(data: {}): Promise<this> {
@@ -385,7 +399,7 @@ class FirebaseModel {
         `Invalid Fields were found in update data for ${this.constructor.name}`
       );
     }
-    await updateDoc(this._doc, data);
+    await updateDoc(this._doc, this.constructor.getFirestoreSafeData(data));
     return await this._refreshData();
   }
   async delete(): Promise<void> {
@@ -399,7 +413,10 @@ class FirebaseModel {
       }
       const updateData = await updateFunc(docSnap.data());
       if (this.constructor.validate(updateData, true)) {
-        transaction.update(this._doc, updateData);
+        transaction.update(
+          this._doc,
+          this.constructor.getFirestoreSafeData(updateData)
+        );
       } else {
         throw new Error(
           `Invalid Fields were found in update data for ${this.constructor.name}`
