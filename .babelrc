@@ -1,7 +1,6 @@
 {
   "presets": ["@babel/preset-flow"],
   "plugins": [
-    "@babel/plugin-transform-modules-commonjs",
     "babel-plugin-transform-flow-enums"
   ]
 }

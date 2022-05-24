@@ -1,20 +1,26 @@
-import {
-  FirebaseMap,
-  FirebaseArray,
-  FirebaseString,
-  FirebaseNumber,
-  FirebaseBool,
-  FirebaseNull,
-  FirebaseModel,
-  FirebaseSchema,
-} from "../index.js";
+"use strict";
 
-import { initializeApp, deleteApp } from "@firebase/app";
+const index = require("../build/index.js");
+
+const firebaseApp = require("@firebase/app");
 
 const _ = require("lodash");
+
 const env = require("dotenv");
 
 env.config();
+
+const FirebaseMap = index.FirebaseMap;
+const FirebaseArray = index.FirebaseArray;
+const FirebaseString = index.FirebaseString;
+const FirebaseNumber = index.FirebaseNumber;
+const FirebaseBool = index.FirebaseBool;
+const FirebaseNull = index.FirebaseNull;
+const FirebaseModel = index.FirebaseModel;
+const FirebaseSchema = index.FirebaseSchema;
+
+const initializeApp = firebaseApp.initializeApp;
+const deleteApp = firebaseApp.deleteApp;
 
 function expectEqual(actual, expected, test) {
   if (!_.isEqual(actual, expected)) {
