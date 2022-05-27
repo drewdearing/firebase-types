@@ -22,7 +22,7 @@ export default class FirebaseMap extends FirebaseType {
   static _new(options: FirebaseTypeOptions): this {
     return new this(_.cloneDeep(options.data ?? {}), options);
   }
-  static _isType(value: any): boolean {
+  _isType(value: any): boolean {
     return typeof value === "object" && !Array.isArray(value) && value !== null;
   }
   default(): {} {
@@ -72,7 +72,7 @@ export default class FirebaseMap extends FirebaseType {
     return !Object.keys(value).some((key) => !(key in this.data));
   }
   _validateValue(value: any, update: boolean = false): boolean {
-    if (!this.constructor._isType(value)) {
+    if (!this._isType(value)) {
       return this._validateUndefinded(value);
     }
     const object = (value: {});

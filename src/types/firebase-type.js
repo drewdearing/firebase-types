@@ -5,6 +5,7 @@ export type FirebaseTypeOptions = {
   required: boolean,
   updatable: boolean,
   nullable: boolean,
+  model?: Class<any>,
   default?: any,
   data?: any,
   enum?: {},
@@ -38,7 +39,10 @@ export default class FirebaseType implements IFirebaseType {
   static _new(options: FirebaseTypeOptions): this {
     return new this(options);
   }
-  static _isType(value: any): boolean {
+  static getFirestoreSafeData(value: any): any {
+    return value;
+  }
+  _isType(value: any): boolean {
     return true;
   }
   default(): any {
@@ -55,7 +59,7 @@ export default class FirebaseType implements IFirebaseType {
   }
   _validateDefault(): boolean {
     const value = this._options.default;
-    return this.constructor._isType(value) || value === undefined;
+    return this._isType(value) || value === undefined;
   }
   _overrideOptions(override: FirebaseTypeOptions): FirebaseTypeOptions {
     const current = this.options();
@@ -83,7 +87,7 @@ export default class FirebaseType implements IFirebaseType {
   }
   _validateValue(value: any, update: boolean = false): boolean {
     return (
-      this.constructor._isType(value) ||
+      this._isType(value) ||
       this._validateUndefinded(value) ||
       this._validateNullable(value)
     );

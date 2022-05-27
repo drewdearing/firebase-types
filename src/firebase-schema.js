@@ -18,4 +18,7 @@ export default class FirebaseSchema {
     let map = this._data.extend(data);
     return new this.constructor(map.data);
   }
+  getFirestoreSafeData(key: string, data: any): any {
+    return this._data.data[key].constructor.getFirestoreSafeData(data);
+  }
 }

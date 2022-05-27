@@ -3,6 +3,7 @@ import FirebaseString from "./types/firebase-string";
 import FirebaseNumber from "./types/firebase-number";
 import FirebaseBool from "./types/firebase-bool";
 import FirebaseNull from "./types/firebase-null";
+import FirebaseReference from "./types/firebase-reference";
 import FirebaseMap from "./types/firebase-map";
 import FirebaseArray from "./types/firebase-array";
 import FirebaseSchema from "./firebase-schema";
@@ -14,6 +15,7 @@ module.exports = {
   FirebaseNumber,
   FirebaseBool,
   FirebaseNull,
+  FirebaseReference,
   FirebaseMap,
   FirebaseArray,
   FirebaseSchema,

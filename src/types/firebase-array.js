@@ -24,7 +24,7 @@ export default class FirebaseArray extends FirebaseType {
   static _new(options: FirebaseTypeOptions): this {
     return new this(_.cloneDeep(options.data ?? []), options);
   }
-  static _isType(value: any): boolean {
+  _isType(value: any): boolean {
     return Array.isArray(value);
   }
   _validateDefault(): boolean {
@@ -39,7 +39,7 @@ export default class FirebaseArray extends FirebaseType {
     return super.overrideOptions(options);
   }
   _validateValue(value: any): boolean {
-    if (!this.constructor._isType(value)) {
+    if (!this._isType(value)) {
       return this._validateUndefinded(value);
     }
     const array = (value: Array<any>);

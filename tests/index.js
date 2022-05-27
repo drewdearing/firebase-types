@@ -2,7 +2,7 @@
 
 const index = require("../build/index.js");
 
-const firebaseApp = require("@firebase/app");
+const firebaseApp = require("firebase/app");
 
 const _ = require("lodash");
 

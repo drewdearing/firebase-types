@@ -10,7 +10,7 @@ import {
   updateDoc,
   onSnapshot,
   runTransaction,
-} from "@firebase/firestore";
+} from "firebase/firestore";
 
 import FirebaseSchema from "./firebase-schema";
 
@@ -79,9 +79,22 @@ export default class FirebaseModel {
     let docSnap = await getDoc(doc(colRef, id));
     return new this(docSnap);
   }
+  static async getByReference(ref: any): Promise<this> {
+    let docRef = doc(getFirestore(), ref.path);
+    let docSnap = await getDoc(docRef);
+    return new this(docSnap);
+  }
   static getFirestoreSafeData(data: {}): {} {
     return Object.fromEntries(
-      Object.entries(data).filter((entry) => entry[1] !== undefined)
+      Object.entries(data)
+        .filter((entry) => entry[1] !== undefined)
+        .map((entry) => {
+          entry[1] = this.modelSchema().getFirestoreSafeData(
+            entry[0],
+            entry[1]
+          );
+          return entry;
+        })
     );
   }
   listen(func: (data: this) => any): any {
